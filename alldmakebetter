@@ -1,0 +1,161 @@
+-- Services & Setup
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local player = Players.LocalPlayer
+local guiPath = player:WaitForChild("PlayerGui"):WaitForChild("SpinGui"):WaitForChild("LOL"):WaitForChild("Spin"):WaitForChild("Spin")
+
+local spinEvent = guiPath:WaitForChild("RemoteEvent1")
+local rewardEvent = guiPath:WaitForChild("Reward")
+local impressionEvent = ReplicatedStorage:WaitForChild("BloxbizRemotes"):WaitForChild("OnSendGuiImpressions")
+
+-- State
+local isSpinning = false
+local selectedRarity = "Rare"
+
+-- GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "AutoGachaGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 220, 0, 180)
+frame.Position = UDim2.new(0, 50, 0, 300)
+frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+frame.Active = true
+frame.Draggable = true -- 👈 Biar bisa di-drag
+frame.Parent = screenGui
+
+local uiCorner = Instance.new("UICorner", frame)
+uiCorner.CornerRadius = UDim.new(0, 8)
+
+-- Rarity Label
+local rarityLabel = Instance.new("TextLabel")
+rarityLabel.Size = UDim2.new(1, -20, 0, 20)
+rarityLabel.Position = UDim2.new(0, 10, 0, 10)
+rarityLabel.BackgroundTransparency = 1
+rarityLabel.Text = "Pilih Rarity:"
+rarityLabel.TextColor3 = Color3.new(1, 1, 1)
+rarityLabel.Font = Enum.Font.SourceSansBold
+rarityLabel.TextSize = 18
+rarityLabel.Parent = frame
+
+-- Rarity Dropdown
+local rarityDropdown = Instance.new("TextButton")
+rarityDropdown.Size = UDim2.new(1, -20, 0, 30)
+rarityDropdown.Position = UDim2.new(0, 10, 0, 35)
+rarityDropdown.Text = selectedRarity
+rarityDropdown.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+rarityDropdown.TextColor3 = Color3.new(1, 1, 1)
+rarityDropdown.Font = Enum.Font.SourceSansBold
+rarityDropdown.TextSize = 18
+rarityDropdown.Parent = frame
+
+-- Dropdown Options
+local options = {"Common", "Uncommon", "Rare", "Epic", "Legendary"}
+local dropdownFrame = Instance.new("Frame")
+dropdownFrame.Size = UDim2.new(1, -20, 0, #options * 25)
+dropdownFrame.Position = UDim2.new(0, 10, 0, 65)
+dropdownFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+dropdownFrame.Visible = false
+dropdownFrame.Parent = frame
+
+local function updateDropdown()
+	for _, child in ipairs(dropdownFrame:GetChildren()) do
+		if child:IsA("TextButton") then child:Destroy() end
+	end
+	for i, rarity in ipairs(options) do
+		local opt = Instance.new("TextButton")
+		opt.Size = UDim2.new(1, 0, 0, 25)
+		opt.Position = UDim2.new(0, 0, 0, (i - 1) * 25)
+		opt.Text = rarity
+		opt.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+		opt.TextColor3 = Color3.new(1, 1, 1)
+		opt.Font = Enum.Font.SourceSans
+		opt.TextSize = 16
+		opt.Parent = dropdownFrame
+
+		opt.MouseButton1Click:Connect(function()
+			selectedRarity = rarity
+			rarityDropdown.Text = rarity
+			dropdownFrame.Visible = false
+		end)
+	end
+end
+
+rarityDropdown.MouseButton1Click:Connect(function()
+	dropdownFrame.Visible = not dropdownFrame.Visible
+	updateDropdown()
+end)
+
+-- Start Button
+local startBtn = Instance.new("TextButton")
+startBtn.Size = UDim2.new(1, -20, 0, 30)
+startBtn.Position = UDim2.new(0, 10, 0, 65 + (#options * 25) + 10)
+startBtn.Text = "Start"
+startBtn.BackgroundColor3 = Color3.fromRGB(0, 160, 0)
+startBtn.TextColor3 = Color3.new(1, 1, 1)
+startBtn.Font = Enum.Font.SourceSansBold
+startBtn.TextSize = 20
+startBtn.Parent = frame
+
+-- Stop Button
+local stopBtn = Instance.new("TextButton")
+stopBtn.Size = UDim2.new(1, -20, 0, 30)
+stopBtn.Position = UDim2.new(0, 10, 0, 105 + (#options * 25))
+stopBtn.Text = "Stop"
+stopBtn.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+stopBtn.TextColor3 = Color3.new(1, 1, 1)
+stopBtn.Font = Enum.Font.SourceSansBold
+stopBtn.TextSize = 20
+stopBtn.Parent = frame
+
+-- Close Button
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(1, -20, 0, 25)
+closeBtn.Position = UDim2.new(0, 10, 1, -35)
+closeBtn.Text = "Close GUI"
+closeBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.Font = Enum.Font.SourceSans
+closeBtn.TextSize = 16
+closeBtn.Parent = frame
+
+-- Auto Gacha Function
+local function autoSpin()
+	while isSpinning do
+		-- Spin
+		spinEvent:FireServer()
+		task.wait(0.5)
+
+		-- Reward
+		rewardEvent:FireServer(selectedRarity)
+
+		-- Impression
+		impressionEvent:FireServer({
+			{
+				button_path = "SpinGui.LOL.Spin",
+				button_name = "Spin"
+			}
+		})
+
+		task.wait(2)
+	end
+end
+
+-- Button connections
+startBtn.MouseButton1Click:Connect(function()
+	if not isSpinning then
+		isSpinning = true
+		coroutine.wrap(autoSpin)()
+	end
+end)
+
+stopBtn.MouseButton1Click:Connect(function()
+	isSpinning = false
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+	isSpinning = false
+	screenGui:Destroy()
+end)
