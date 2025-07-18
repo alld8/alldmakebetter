@@ -1,0 +1,156 @@
+-- Services
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local player = Players.LocalPlayer
+
+-- Remotes
+local fishingRemotes = ReplicatedStorage:WaitForChild("Fishing"):WaitForChild("Remotes")
+local requestFish = fishingRemotes:WaitForChild("RequestFish")
+local catchFish = fishingRemotes:WaitForChild("CatchFish")
+local guiImpression = ReplicatedStorage:WaitForChild("BloxbizRemotes"):WaitForChild("OnSendGuiImpressions")
+
+-- State
+local isFishing = false
+local selectedWater = "Water1"
+
+-- GUI Setup
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "AutoFishGUI"
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 230, 0, 180)
+frame.Position = UDim2.new(0, 30, 0, 300)
+frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+frame.Active = true
+frame.Draggable = true
+
+local corner = Instance.new("UICorner", frame)
+corner.CornerRadius = UDim.new(0, 10)
+
+-- Label
+local label = Instance.new("TextLabel", frame)
+label.Size = UDim2.new(1, -20, 0, 25)
+label.Position = UDim2.new(0, 10, 0, 5)
+label.BackgroundTransparency = 1
+label.Text = "Auto Fishing"
+label.Font = Enum.Font.SourceSansBold
+label.TextSize = 20
+label.TextColor3 = Color3.new(1, 1, 1)
+
+-- Water dropdown
+local waterButton = Instance.new("TextButton", frame)
+waterButton.Size = UDim2.new(1, -20, 0, 30)
+waterButton.Position = UDim2.new(0, 10, 0, 35)
+waterButton.Text = "Water: " .. selectedWater
+waterButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+waterButton.TextColor3 = Color3.new(1, 1, 1)
+waterButton.Font = Enum.Font.SourceSans
+waterButton.TextSize = 18
+
+-- Dropdown frame
+local dropdown = Instance.new("Frame", frame)
+dropdown.Size = UDim2.new(1, -20, 0, 75)
+dropdown.Position = UDim2.new(0, 10, 0, 65)
+dropdown.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+dropdown.Visible = false
+
+local options = {"Water1", "Water2", "Water3"}
+
+local function refreshDropdown()
+	for _, c in ipairs(dropdown:GetChildren()) do
+		if c:IsA("TextButton") then c:Destroy() end
+	end
+
+	for i, water in ipairs(options) do
+		local opt = Instance.new("TextButton", dropdown)
+		opt.Size = UDim2.new(1, 0, 0, 25)
+		opt.Position = UDim2.new(0, 0, 0, (i - 1) * 25)
+		opt.Text = water
+		opt.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+		opt.TextColor3 = Color3.new(1, 1, 1)
+		opt.Font = Enum.Font.SourceSans
+		opt.TextSize = 16
+
+		opt.MouseButton1Click:Connect(function()
+			selectedWater = water
+			waterButton.Text = "Water: " .. water
+			dropdown.Visible = false
+		end)
+	end
+end
+
+waterButton.MouseButton1Click:Connect(function()
+	dropdown.Visible = not dropdown.Visible
+	refreshDropdown()
+end)
+
+-- START button
+local startBtn = Instance.new("TextButton", frame)
+startBtn.Size = UDim2.new(0.5, -15, 0, 30)
+startBtn.Position = UDim2.new(0, 10, 1, -70)
+startBtn.Text = "Start"
+startBtn.BackgroundColor3 = Color3.fromRGB(0, 160, 0)
+startBtn.TextColor3 = Color3.new(1, 1, 1)
+startBtn.Font = Enum.Font.SourceSansBold
+startBtn.TextSize = 18
+
+-- STOP button
+local stopBtn = Instance.new("TextButton", frame)
+stopBtn.Size = UDim2.new(0.5, -15, 0, 30)
+stopBtn.Position = UDim2.new(0.5, 5, 1, -70)
+stopBtn.Text = "Stop"
+stopBtn.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+stopBtn.TextColor3 = Color3.new(1, 1, 1)
+stopBtn.Font = Enum.Font.SourceSansBold
+stopBtn.TextSize = 18
+
+-- MINIMIZE button
+local minimizeBtn = Instance.new("TextButton", frame)
+minimizeBtn.Size = UDim2.new(1, -20, 0, 25)
+minimizeBtn.Position = UDim2.new(0, 10, 1, -35)
+minimizeBtn.Text = "Minimize"
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+minimizeBtn.TextColor3 = Color3.new(1, 1, 1)
+minimizeBtn.Font = Enum.Font.SourceSans
+minimizeBtn.TextSize = 16
+
+-- Auto Fishing Logic
+local function autoFish()
+	while isFishing do
+		pcall(function()
+			requestFish:InvokeServer(selectedWater)
+			guiImpression:FireServer({
+				{
+					button_path = "Custom Inventory.hotBar.3",
+					button_name = "3"
+				}
+			})
+			catchFish:FireServer()
+		end)
+		task.wait(0.2)
+	end
+end
+
+-- Button actions
+startBtn.MouseButton1Click:Connect(function()
+	if not isFishing then
+		isFishing = true
+		coroutine.wrap(autoFish)()
+	end
+end)
+
+stopBtn.MouseButton1Click:Connect(function()
+	isFishing = false
+end)
+
+minimizeBtn.MouseButton1Click:Connect(function()
+	frame.Visible = false
+end)
+
+-- Restore GUI with hotkey (optional)
+game:GetService("UserInputService").InputBegan:Connect(function(input, processed)
+	if not processed and input.KeyCode == Enum.KeyCode.F then
+		frame.Visible = true
+	end
+end)
