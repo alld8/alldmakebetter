@@ -1,0 +1,166 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = Players.LocalPlayer
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AutoTrashGui"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 220, 0, 150)
+MainFrame.Position = UDim2.new(0, 100, 0, 100)
+MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+Instance.new("UICorner", MainFrame)
+
+
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(0, 80, 0, 25)
+ToggleBtn.Position = UDim2.new(1, 5, 0, 0)
+ToggleBtn.AnchorPoint = Vector2.new(1, 0)
+ToggleBtn.Text = "—"
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(120, 120, 255)
+ToggleBtn.TextColor3 = Color3.new(1,1,1)
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.TextSize = 20
+ToggleBtn.Parent = MainFrame
+Instance.new("UICorner", ToggleBtn)
+
+
+local StartBtn = Instance.new("TextButton")
+StartBtn.Size = UDim2.new(0, 180, 0, 30)
+StartBtn.Position = UDim2.new(0, 20, 0, 15)
+StartBtn.Text = "✅🟢 Start Auto Trash"
+StartBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+StartBtn.TextColor3 = Color3.new(1,1,1)
+StartBtn.Font = Enum.Font.GothamBold
+StartBtn.TextSize = 14
+StartBtn.Parent = MainFrame
+Instance.new("UICorner", StartBtn)
+
+
+local StopBtn = Instance.new("TextButton")
+StopBtn.Size = UDim2.new(0, 180, 0, 30)
+StopBtn.Position = UDim2.new(0, 20, 0, 55)
+StopBtn.Text = "❌💀 Stop Auto Trash"
+StopBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 180)
+StopBtn.TextColor3 = Color3.new(1,1,1)
+StopBtn.Font = Enum.Font.GothamBold
+StopBtn.TextSize = 14
+StopBtn.Parent = MainFrame
+Instance.new("UICorner", StopBtn)
+
+
+local Rainbow = Instance.new("TextLabel")
+Rainbow.Size = UDim2.new(0, 180, 0, 20)
+Rainbow.Position = UDim2.new(0, 20, 0, 100)
+Rainbow.BackgroundTransparency = 1
+Rainbow.Text = "By Aldy"
+Rainbow.Font = Enum.Font.GothamBold
+Rainbow.TextSize = 14
+Rainbow.TextColor3 = Color3.new(1,0,0)
+Rainbow.Parent = MainFrame
+
+
+task.spawn(function()
+	while true do
+		for i = 0, 1, 0.01 do
+			Rainbow.TextColor3 = Color3.fromHSV(i, 1, 1)
+			task.wait(0.05)
+		end
+	end
+end)
+
+
+local minimized = false
+ToggleBtn.MouseButton1Click:Connect(function()
+	minimized = not minimized
+	if minimized then
+		MainFrame.Visible = false
+		ToggleBtn.Text = "+"
+		task.wait(0.1)
+		ToggleBtn.Parent = ScreenGui
+		ToggleBtn.Position = UDim2.new(0, 100, 0, 100)
+	else
+		MainFrame.Visible = true
+		ToggleBtn.Text = "—"
+		ToggleBtn.Parent = MainFrame
+		ToggleBtn.Position = UDim2.new(1, 5, 0, 0)
+	end
+end)
+
+
+local running = false
+
+local function runAutoTrash()
+	running = true
+	local minigameRewards = {
+		"Old Bag", "Bucket", "Bottle", "Tire", "Drum", "Wood",
+		"Trash", "Cloth", "Metal", "Straw Hat", "Broke Bottle", "Boots", "Bag"
+	}
+
+	local function completeAll()
+		for _, item in ipairs(minigameRewards) do
+			pcall(function()
+				ReplicatedStorage:WaitForChild("MinigameComplete"):FireServer(item)
+			end)
+		end
+	end
+
+	local function autoSell()
+		pcall(function()
+			ReplicatedStorage:WaitForChild("Merchant"):WaitForChild("SellMerchantEvent"):InvokeServer()
+		end)
+	end
+
+	local function findPrompt(model)
+		local part = model:FindFirstChild("Trashcan")
+		if part then
+			return part:FindFirstChildOfClass("ProximityPrompt"), part
+		end
+	end
+
+	local function teleportAndInteract(model, hrp)
+		local prompt, part = findPrompt(model)
+		if prompt and part then
+			hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0)
+			task.wait(0.5)
+			fireproximityprompt(prompt)
+			return true
+		end
+	end
+
+	while running do
+		local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+		if not hrp then break end
+
+		for i = 1, 15 do
+			if not running then break end
+			local model = workspace:FindFirstChild("TrashCan" .. i)
+			if model then
+				if teleportAndInteract(model, hrp) then
+					task.wait(0.4)
+					completeAll()
+					autoSell()
+					task.wait(1.5)
+				end
+			end
+		end
+
+		task.wait(2)
+	end
+end
+
+StartBtn.MouseButton1Click:Connect(function()
+	if not running then
+		task.spawn(runAutoTrash)
+	end
+end)
+
+StopBtn.MouseButton1Click:Connect(function()
+	running = false
+end)
