@@ -4,10 +4,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
--- Remote references
+
 local guiRemote = ReplicatedStorage:WaitForChild("BloxbizRemotes"):WaitForChild("OnSendGuiImpressions")
 
--- State
+
 local isFishing = false
 local selectedRodName = "SunkenRod" -- Default
 local availableRods = {
@@ -15,7 +15,7 @@ local availableRods = {
 	"PinkRod", "RelicRod", "SpecialRod", "SunkenRod", "UltratechRod"
 }
 
--- GUI Setup
+-- GUI
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 gui.Name = "InstantFishGUI"
 gui.ResetOnSpawn = false
@@ -44,7 +44,7 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 20
 title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Creator tag
+-- Creator
 local tagFrame = Instance.new("Frame", frame)
 tagFrame.Size = UDim2.new(0, 100, 0, 25)
 tagFrame.Position = UDim2.new(1, -110, 0, 5)
