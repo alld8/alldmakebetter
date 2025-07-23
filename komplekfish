@@ -1,0 +1,132 @@
+-- Services
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+
+-- Remote references
+local guiRemote = ReplicatedStorage:WaitForChild("BloxbizRemotes"):WaitForChild("OnSendGuiImpressions")
+
+-- State
+local isFishing = false
+
+-- GUI Setup
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "InstantFishGUI"
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 220, 0, 120)
+frame.Position = UDim2.new(0, 30, 0, 300)
+frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+
+-- Title
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 25)
+title.Position = UDim2.new(0, 0, 0, 5)
+title.BackgroundTransparency = 1
+title.Text = "Instant Fish"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 20
+
+-- By Label (selalu tampil)
+local byLabel = Instance.new("TextLabel", frame)
+byLabel.Size = UDim2.new(1, 0, 0, 20)
+byLabel.Position = UDim2.new(0, 0, 1, -20)
+byLabel.BackgroundTransparency = 1
+byLabel.Text = "by Aldy"
+byLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+byLabel.Font = Enum.Font.SourceSans
+byLabel.TextSize = 16
+
+-- Start button
+local startBtn = Instance.new("TextButton", frame)
+startBtn.Size = UDim2.new(0.5, -10, 0, 30)
+startBtn.Position = UDim2.new(0, 10, 0, 45)
+startBtn.Text = "Start"
+startBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+startBtn.TextColor3 = Color3.new(1, 1, 1)
+startBtn.Font = Enum.Font.SourceSansBold
+startBtn.TextSize = 18
+
+-- Stop button
+local stopBtn = Instance.new("TextButton", frame)
+stopBtn.Size = UDim2.new(0.5, -10, 0, 30)
+stopBtn.Position = UDim2.new(0.5, 0, 0, 45)
+stopBtn.Text = "Stop"
+stopBtn.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+stopBtn.TextColor3 = Color3.new(1, 1, 1)
+stopBtn.Font = Enum.Font.SourceSansBold
+stopBtn.TextSize = 18
+
+-- Minimize button
+local minimizeBtn = Instance.new("TextButton", frame)
+minimizeBtn.Size = UDim2.new(1, -20, 0, 25)
+minimizeBtn.Position = UDim2.new(0, 10, 1, -50)
+minimizeBtn.Text = "Minimize"
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+minimizeBtn.TextColor3 = Color3.new(1, 1, 1)
+minimizeBtn.Font = Enum.Font.SourceSans
+minimizeBtn.TextSize = 16
+
+-- Show GUI again with F key
+UserInputService.InputBegan:Connect(function(input, gp)
+    if not gp and input.KeyCode == Enum.KeyCode.F then
+        frame.Visible = true
+    end
+end)
+
+-- Minimize button logic
+minimizeBtn.MouseButton1Click:Connect(function()
+    frame.Visible = false
+end)
+
+-- AUTO FISH FUNCTION
+local function instantFish()
+    while isFishing do
+        pcall(function()
+            -- Fire GUI impression (trigger start)
+            guiRemote:FireServer({
+                {
+                    button_path = "ContextActionGui.ContextButtonFrame.ContextActionButton",
+                    button_name = "ContextActionButton"
+                }
+            })
+
+            local rod = player.Backpack:FindFirstChild("SunkenRod")
+            local character = player.Character
+
+            -- Auto Equip if needed
+            if rod and not character:FindFirstChild("SunkenRod") then
+                rod.Parent = character
+                task.wait(0.1)
+            end
+
+            -- Fire Complete if equipped
+            local equippedRod = character:FindFirstChild("SunkenRod")
+            if equippedRod then
+                local miniGame = equippedRod:FindFirstChild("MiniGame")
+                if miniGame then
+                    miniGame:FireServer("Complete")
+                end
+            end
+        end)
+        task.wait()
+    end
+end
+
+-- Button logic
+startBtn.MouseButton1Click:Connect(function()
+    if not isFishing then
+        isFishing = true
+        coroutine.wrap(instantFish)()
+    end
+end)
+
+stopBtn.MouseButton1Click:Connect(function()
+    isFishing = false
+end)
