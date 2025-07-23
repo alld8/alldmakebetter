@@ -1,0 +1,197 @@
+-- Services
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+
+
+local guiRemote = ReplicatedStorage:WaitForChild("BloxbizRemotes"):WaitForChild("OnSendGuiImpressions")
+
+
+local isFishing = false
+local selectedRodName = "BasicRod" -- Default
+local availableRods = {
+	"AuroraRod", "FischerRod", "HolyRod", "MidasRod",
+	"PinkRod", "RelicRod", "SpecialRod", "SunkenRod", "UltratechRod"
+}
+
+-- GUI
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "InstantFishGUI"
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 250, 0, 200)
+frame.Position = UDim2.new(0, 30, 0, 300)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.Active = true
+frame.Draggable = true
+
+-- Style
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+local stroke = Instance.new("UIStroke", frame)
+stroke.Thickness = 1.5
+stroke.Color = Color3.fromRGB(0, 255, 100)
+
+-- Title
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, -20, 0, 30)
+title.Position = UDim2.new(0, 10, 0, 5)
+title.BackgroundTransparency = 1
+title.Text = "🎣 Instant Fish"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Creator
+local tagFrame = Instance.new("Frame", frame)
+tagFrame.Size = UDim2.new(0, 100, 0, 25)
+tagFrame.Position = UDim2.new(1, -110, 0, 5)
+tagFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Instance.new("UICorner", tagFrame).CornerRadius = UDim.new(0, 8)
+local tagStroke = Instance.new("UIStroke", tagFrame)
+tagStroke.Color = Color3.fromRGB(255, 255, 0)
+tagStroke.Thickness = 1
+
+local tagLabel = Instance.new("TextLabel", tagFrame)
+tagLabel.Size = UDim2.new(1, 0, 1, 0)
+tagLabel.BackgroundTransparency = 1
+tagLabel.Text = "ALLD.SC"
+tagLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+tagLabel.Font = Enum.Font.GothamMedium
+tagLabel.TextSize = 14
+
+-- Start Button
+local startBtn = Instance.new("TextButton", frame)
+startBtn.Size = UDim2.new(0.5, -15, 0, 35)
+startBtn.Position = UDim2.new(0, 10, 0, 45)
+startBtn.Text = "▶ Start"
+startBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+startBtn.TextColor3 = Color3.new(1, 1, 1)
+startBtn.Font = Enum.Font.GothamBold
+startBtn.TextSize = 16
+Instance.new("UICorner", startBtn).CornerRadius = UDim.new(0, 6)
+
+-- Stop Button
+local stopBtn = Instance.new("TextButton", frame)
+stopBtn.Size = UDim2.new(0.5, -15, 0, 35)
+stopBtn.Position = UDim2.new(0.5, 5, 0, 45)
+stopBtn.Text = "■ Stop"
+stopBtn.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+stopBtn.TextColor3 = Color3.new(1, 1, 1)
+stopBtn.Font = Enum.Font.GothamBold
+stopBtn.TextSize = 16
+Instance.new("UICorner", stopBtn).CornerRadius = UDim.new(0, 6)
+
+-- Dropdown Label
+local dropdownFrame = Instance.new("Frame", frame)
+dropdownFrame.Size = UDim2.new(1, -20, 0, 70)
+dropdownFrame.Position = UDim2.new(0, 10, 0, 90)
+dropdownFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+Instance.new("UICorner", dropdownFrame).CornerRadius = UDim.new(0, 8)
+
+local dropdownLabel = Instance.new("TextLabel", dropdownFrame)
+dropdownLabel.Size = UDim2.new(1, 0, 0, 20)
+dropdownLabel.Position = UDim2.new(0, 0, 0, 0)
+dropdownLabel.Text = "🎣 Select Rod:"
+dropdownLabel.BackgroundTransparency = 1
+dropdownLabel.TextColor3 = Color3.new(1, 1, 1)
+dropdownLabel.Font = Enum.Font.Gotham
+dropdownLabel.TextSize = 14
+dropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Scrollable list
+local scroll = Instance.new("ScrollingFrame", dropdownFrame)
+scroll.Size = UDim2.new(1, 0, 1, -20)
+scroll.Position = UDim2.new(0, 0, 0, 20)
+scroll.BackgroundTransparency = 1
+scroll.CanvasSize = UDim2.new(0, 0, 0, #availableRods * 26)
+scroll.ScrollBarThickness = 4
+scroll.ScrollingDirection = Enum.ScrollingDirection.Y
+
+local UIListLayout = Instance.new("UIListLayout", scroll)
+UIListLayout.Padding = UDim.new(0, 4)
+
+-- Generate rod buttons
+for _, rodName in pairs(availableRods) do
+	local btn = Instance.new("TextButton", scroll)
+	btn.Size = UDim2.new(1, -4, 0, 24)
+	btn.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
+	btn.Text = rodName
+	btn.Font = Enum.Font.Gotham
+	btn.TextSize = 14
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.AutoButtonColor = true
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+
+	btn.MouseButton1Click:Connect(function()
+		selectedRodName = rodName
+		dropdownLabel.Text = "🎣 Selected: " .. rodName
+	end)
+end
+
+-- Minimize Button
+local minimizeBtn = Instance.new("TextButton", frame)
+minimizeBtn.Size = UDim2.new(1, -20, 0, 25)
+minimizeBtn.Position = UDim2.new(0, 10, 1, -30)
+minimizeBtn.Text = "Minimize"
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+minimizeBtn.TextColor3 = Color3.new(1, 1, 1)
+minimizeBtn.Font = Enum.Font.Gotham
+minimizeBtn.TextSize = 14
+Instance.new("UICorner", minimizeBtn).CornerRadius = UDim.new(0, 6)
+
+minimizeBtn.MouseButton1Click:Connect(function()
+	frame.Visible = false
+end)
+
+-- F key to show again
+UserInputService.InputBegan:Connect(function(input, gp)
+	if not gp and input.KeyCode == Enum.KeyCode.F then
+		frame.Visible = true
+	end
+end)
+
+-- AUTO FISH FUNCTION
+local function instantFish()
+	while isFishing do
+		pcall(function()
+			guiRemote:FireServer({
+				{
+					button_path = "ContextActionGui.ContextButtonFrame.ContextActionButton",
+					button_name = "ContextActionButton"
+				}
+			})
+
+			local rod = player.Backpack:FindFirstChild(selectedRodName)
+			local character = player.Character
+
+			if rod and not character:FindFirstChild(selectedRodName) then
+				rod.Parent = character
+				task.wait(0.1)
+			end
+
+			local equippedRod = character:FindFirstChild(selectedRodName)
+			if equippedRod then
+				local miniGame = equippedRod:FindFirstChild("MiniGame")
+				if miniGame then
+					miniGame:FireServer("Complete")
+				end
+			end
+		end)
+		task.wait()
+	end
+end
+
+-- Button logic
+startBtn.MouseButton1Click:Connect(function()
+	if not isFishing then
+		isFishing = true
+		coroutine.wrap(instantFish)()
+	end
+end)
+
+stopBtn.MouseButton1Click:Connect(function()
+	isFishing = false
+end)
