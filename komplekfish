@@ -9,7 +9,7 @@ local guiRemote = ReplicatedStorage:WaitForChild("BloxbizRemotes"):WaitForChild(
 
 
 local isFishing = false
-local selectedRodName = "BasicRod" -- Default
+local selectedRodName = "FischerRod" -- Default
 local availableRods = {
 	"AuroraRod", "FischerRod", "HolyRod", "MidasRod",
 	"PinkRod", "RelicRod", "SpecialRod", "SunkenRod", "UltratechRod"
