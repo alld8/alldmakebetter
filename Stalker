@@ -1,0 +1,274 @@
+
+-- Services
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+-- Theme Configuration
+local themes = {
+    light = {
+        frame = Color3.fromRGB(200, 220, 255),
+        header = Color3.fromRGB(150, 180, 255),
+        button = Color3.fromRGB(100, 140, 255),
+        dropdown = Color3.fromRGB(160, 180, 255),
+        text = Color3.fromRGB(0, 0, 0)
+    },
+    dark = {
+        frame = Color3.fromRGB(15, 15, 30),
+        header = Color3.fromRGB(35, 35, 60),
+        button = Color3.fromRGB(50, 50, 100),
+        dropdown = Color3.fromRGB(30, 30, 60),
+        text = Color3.fromRGB(255, 255, 255)
+    }
+}
+local currentTheme = "dark"
+
+-- GUI Elements
+local gui = Instance.new("ScreenGui", game.CoreGui)
+gui.Name = "UniversalGui"
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 360, 0, 280)
+frame.Position = UDim2.new(0.5, -180, 0.5, -140)
+frame.BackgroundColor3 = themes[currentTheme].frame
+frame.BackgroundTransparency = 0.1
+frame.BorderSizePixel = 0
+frame.Active = true
+Instance.new("UICorner", frame)
+
+local gradient = Instance.new("UIGradient", frame)
+gradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(70, 130, 180)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 149, 237))
+})
+gradient.Transparency = NumberSequence.new(0.1)
+gradient.Rotation = 45
+
+local header = Instance.new("Frame", frame)
+header.Size = UDim2.new(1, 0, 0, 30)
+header.BackgroundColor3 = themes[currentTheme].header
+header.BackgroundTransparency = 0.3
+
+local title = Instance.new("TextLabel", header)
+title.Size = UDim2.new(1, 0, 1, 0)
+title.BackgroundTransparency = 1
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.TextColor3 = themes[currentTheme].text
+title.Text = "Stalker Universal By Al"
+
+-- Rainbow Label
+local alldLabel = Instance.new("TextLabel", frame)
+alldLabel.Size = UDim2.new(1, 0, 0, 36)
+alldLabel.Position = UDim2.new(0, 0, 0, -36)
+alldLabel.Text = "ALLD.SC"
+alldLabel.Font = Enum.Font.GothamBlack
+alldLabel.TextSize = 32
+alldLabel.BackgroundTransparency = 1
+spawn(function()
+    local t = 0
+    while alldLabel and alldLabel.Parent do
+        t += 0.01
+        alldLabel.TextColor3 = Color3.fromHSV(t % 1, 1, 1)
+        wait()
+    end
+end)
+
+-- Drag System for PC & Mobile
+local function makeDraggable(handle, object)
+    local dragging, dragInput, dragStart, startPos
+    local function update(input)
+        local delta = input.Position - dragStart
+        object.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = object.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    handle.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
+end
+makeDraggable(header, frame)
+
+-- Hide/Open Toggle
+local hideButton = Instance.new("TextButton", header)
+hideButton.Size = UDim2.new(0, 60, 0, 24)
+hideButton.Position = UDim2.new(1, -65, 0, 2)
+hideButton.Text = "Hide"
+hideButton.TextColor3 = themes[currentTheme].text
+hideButton.BackgroundColor3 = themes[currentTheme].button
+Instance.new("UICorner", hideButton)
+
+local openButton = Instance.new("TextButton", gui)
+openButton.Size = UDim2.new(0, 80, 0, 30)
+openButton.Position = UDim2.new(0, 10, 1, -40)
+openButton.Text = "Open"
+openButton.Visible = false
+openButton.BackgroundColor3 = themes[currentTheme].button
+openButton.TextColor3 = themes[currentTheme].text
+Instance.new("UICorner", openButton)
+
+hideButton.MouseButton1Click:Connect(function()
+    frame.Visible = false
+    openButton.Visible = true
+end)
+openButton.MouseButton1Click:Connect(function()
+    frame.Visible = true
+    openButton.Visible = false
+end)
+
+-- Buttons
+local function createButton(name, pos)
+    local btn = Instance.new("TextButton", frame)
+    btn.Name = name
+    btn.Size = UDim2.new(0.45, -5, 0, 35)
+    btn.Position = pos
+    btn.BackgroundColor3 = themes[currentTheme].button
+    btn.TextColor3 = themes[currentTheme].text
+    btn.Text = name
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 14
+    Instance.new("UICorner", btn)
+    return btn
+end
+
+local espBtn = createButton("ESP", UDim2.new(0, 10, 0, 40))
+local viewBtn = createButton("View", UDim2.new(0.55, 5, 0, 40))
+local tpBtn = createButton("Teleport", UDim2.new(0, 10, 0, 85))
+local themeBtn = createButton("Theme", UDim2.new(0.55, 5, 0, 85))
+
+-- Dropdown Player List (Fixed inside frame)
+local dropdownHolder = Instance.new("ScrollingFrame", frame)
+dropdownHolder.Position = UDim2.new(0, 10, 0, 130)
+dropdownHolder.Size = UDim2.new(1, -20, 0, 120)
+dropdownHolder.BackgroundColor3 = themes[currentTheme].dropdown
+dropdownHolder.BackgroundTransparency = 0.1
+dropdownHolder.CanvasSize = UDim2.new(0, 0, 0, 0)
+dropdownHolder.ScrollBarThickness = 6
+Instance.new("UICorner", dropdownHolder)
+local UIListLayout = Instance.new("UIListLayout", dropdownHolder)
+UIListLayout.Padding = UDim.new(0, 4)
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+local selectedPlayer = nil
+local function refreshDropdown()
+    for _, child in ipairs(dropdownHolder:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            local btn = Instance.new("TextButton", dropdownHolder)
+            btn.Size = UDim2.new(1, 0, 0, 28)
+            btn.BackgroundColor3 = Color3.fromRGB(120, 140, 180)
+            btn.TextColor3 = Color3.new(1,1,1)
+            btn.Text = plr.Name
+            btn.Font = Enum.Font.Gotham
+            btn.TextSize = 14
+            Instance.new("UICorner", btn)
+            btn.MouseButton1Click:Connect(function()
+                selectedPlayer = plr
+                for _, b in ipairs(dropdownHolder:GetChildren()) do
+                    if b:IsA("TextButton") then
+                        b.BackgroundColor3 = Color3.fromRGB(120, 140, 180)
+                    end
+                end
+                btn.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
+            end)
+        end
+    end
+    dropdownHolder.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y)
+end
+refreshDropdown()
+
+-- ESP Toggle
+local espEnabled = false
+local espBox = nil
+local function createESP(target)
+    if espBox then espBox:Destroy() end
+    espBox = Instance.new("BoxHandleAdornment")
+    espBox.Adornee = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+    espBox.AlwaysOnTop = true
+    espBox.ZIndex = 5
+    espBox.Size = Vector3.new(3,6,1)
+    espBox.Transparency = 0.3
+    espBox.Color3 = Color3.fromRGB(255,0,0)
+    espBox.Parent = target.Character
+end
+espBtn.MouseButton1Click:Connect(function()
+    if selectedPlayer and selectedPlayer.Character then
+        if espEnabled then
+            if espBox then espBox:Destroy() espBox = nil end
+            espBtn.Text = "ESP"
+        else
+            createESP(selectedPlayer)
+            espBtn.Text = "UNESP"
+        end
+        espEnabled = not espEnabled
+    end
+end)
+
+-- View/Unview
+local viewing = false
+viewBtn.MouseButton1Click:Connect(function()
+    if selectedPlayer and selectedPlayer.Character then
+        if viewing then
+            Camera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
+            viewBtn.Text = "View"
+        else
+            Camera.CameraSubject = selectedPlayer.Character:FindFirstChild("Humanoid")
+            viewBtn.Text = "Unview"
+        end
+        viewing = not viewing
+    end
+end)
+
+-- Teleport
+tpBtn.MouseButton1Click:Connect(function()
+    if selectedPlayer and selectedPlayer.Character and LocalPlayer.Character then
+        local root = selectedPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if root then
+            LocalPlayer.Character:MoveTo(root.Position + Vector3.new(0,2,0))
+        end
+    end
+end)
+
+-- Theme Switch
+themeBtn.MouseButton1Click:Connect(function()
+    currentTheme = currentTheme == "light" and "dark" or "light"
+    frame.BackgroundColor3 = themes[currentTheme].frame
+    header.BackgroundColor3 = themes[currentTheme].header
+    hideButton.BackgroundColor3 = themes[currentTheme].button
+    hideButton.TextColor3 = themes[currentTheme].text
+    openButton.BackgroundColor3 = themes[currentTheme].button
+    openButton.TextColor3 = themes[currentTheme].text
+    for _, btn in pairs({espBtn, viewBtn, tpBtn, themeBtn}) do
+        btn.BackgroundColor3 = themes[currentTheme].button
+        btn.TextColor3 = themes[currentTheme].text
+    end
+    dropdownHolder.BackgroundColor3 = themes[currentTheme].dropdown
+    title.TextColor3 = themes[currentTheme].text
+end)
+
+-- Refresh playerlist every few seconds
+while true do
+    task.wait(5)
+    refreshDropdown()
+end
