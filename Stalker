@@ -59,7 +59,7 @@ title.BackgroundTransparency = 1
 title.Font = Enum.Font.GothamBold
 title.TextSize = 18
 title.TextColor3 = themes[currentTheme].text
-title.Text = "Stalker Universal By Al"
+title.Text = "Stalker Universal By AL"
 
 -- Rainbow Label
 local alldLabel = Instance.new("TextLabel", frame)
