@@ -1,0 +1,335 @@
+-- Anti Duplikat GUI
+pcall(function()
+	local existing = game:GetService("CoreGui"):FindFirstChild("KyoukaraGUI")
+	if existing then existing:Destroy() end
+end)
+
+-- Services
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- GUI Protection
+local CoreGui = game:GetService("CoreGui")
+local function safeParentGui(gui)
+	local suc, err = pcall(function()
+		gui.Parent = CoreGui
+	end)
+	if not suc then
+		gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+	end
+end
+
+-- GUI Instance
+local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+ScreenGui.Name = "ALLDgui"
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Logic Toggling GUI
+local guiVisible = true
+
+-- Tombol Open/Hide GUI
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Name = "ToggleGUIButton"
+ToggleButton.Size = UDim2.new(0, 90, 0, 30)
+ToggleButton.Position = UDim2.new(0, 10, 0, 100) -- pojok kiri atas sedikit ke bawah
+ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 145, 255)
+ToggleButton.TextColor3 = Color3.new(1, 1, 1)
+ToggleButton.Text = "HIDE"
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.TextSize = 14
+ToggleButton.ZIndex = 10
+ToggleButton.Parent = ScreenGui
+
+Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 6)
+
+-- Draggable untuk ToggleButton OPEN/HIDE
+local toggleDragging = false
+local toggleDragStart, toggleStartPos, toggleDragInput
+
+local function updateToggleDrag(input)
+	if toggleDragging then
+		local delta = input.Position - toggleDragStart
+		ToggleButton.Position = UDim2.new(
+			toggleStartPos.X.Scale, toggleStartPos.X.Offset + delta.X,
+			toggleStartPos.Y.Scale, toggleStartPos.Y.Offset + delta.Y
+		)
+	end
+end
+
+ToggleButton.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		toggleDragging = true
+		toggleDragStart = input.Position
+		toggleStartPos = ToggleButton.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				toggleDragging = false
+			end
+		end)
+	end
+end)
+
+ToggleButton.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		toggleDragInput = input
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if input == toggleDragInput and toggleDragging then
+		updateToggleDrag(input)
+	end
+end)
+
+-- MainFrame Utama
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Name = "MainFrame"
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+MainFrame.Size = UDim2.new(0, 400, 0, 250)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.BackgroundTransparency = 0.1
+MainFrame.Visible = true
+
+-- Toggle Event Tersamar
+ToggleButton.MouseButton1Click:Connect(function()
+	guiVisible = not guiVisible
+
+	if MainFrame then
+		MainFrame.Visible = guiVisible
+	end
+
+	local disguiseNames = {"ChatMain", "PlayerModule", "ControlScript", "HealthLocal", "Replicator", "UIScaleHandler"}
+	local disguisedName = guiVisible and "KyoukaraGUI" or disguiseNames[math.random(1, #disguiseNames)]
+	ScreenGui.Name = disguisedName
+
+	ToggleButton.Text = guiVisible and "HIDE" or "OPEN"
+end);
+
+-- Container untuk Tab List (Kiri)
+local tabList = Instance.new("Frame")
+tabList.Name = "tabList"
+tabList.Parent = MainFrame
+tabList.Position = UDim2.new(0, 0, 0, 0)
+tabList.Size = UDim2.new(0, 80, 1, -33)
+tabList.BackgroundTransparency = 1
+
+-- Container untuk Konten Tab (Kanan)
+local contentPanel = Instance.new("Frame")
+contentPanel.Name = "contentPanel"
+contentPanel.Parent = MainFrame
+contentPanel.Position = UDim2.new(0, 89, 0, 40)
+contentPanel.Size = UDim2.new(1, -82, 1, -33)
+contentPanel.BackgroundTransparency = 1
+
+-- BAR Tap Indicator
+local TabIndicator = Instance.new("Frame")
+TabIndicator.Name = "TabIndicator"
+TabIndicator.Parent = tabList
+TabIndicator.Size = UDim2.new(0, 5, 0, 12)
+TabIndicator.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+TabIndicator.Position = UDim2.new(0, 2, 0, 42)
+TabIndicator.BackgroundTransparency = 0
+TabIndicator.BorderSizePixel = 0
+TabIndicator.ZIndex = 3
+
+-- UICorner
+local indicatorCorner = Instance.new("UICorner")
+indicatorCorner.CornerRadius = UDim.new(0, 4)
+indicatorCorner.Parent = TabIndicator
+
+-- UICorner Frame Utama
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
+
+local stroke = Instance.new("UIStroke", MainFrame)
+stroke.Color = Color3.fromRGB(0, 170, 255)
+stroke.Thickness = 1.3
+stroke.Transparency = 0.8
+stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+-- Draggable Support
+local DragButton = Instance.new("TextButton", MainFrame)
+DragButton.Name = "DragButton"
+DragButton.BackgroundTransparency = 1
+DragButton.Size = UDim2.new(1, 0, 0, 28)
+DragButton.Text = ""
+DragButton.AutoButtonColor = false
+DragButton.ZIndex = 2
+
+local dragging, dragStart, startPos, dragInput
+
+local function update(input)
+	if dragging then
+		local delta = input.Position - dragStart
+		MainFrame.Position = UDim2.new(
+			startPos.X.Scale, startPos.X.Offset + delta.X,
+			startPos.Y.Scale, startPos.Y.Offset + delta.Y
+		)
+	end
+end
+
+DragButton.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = MainFrame.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+DragButton.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		update(input)
+	end
+end)
+
+-- Watermark Owner
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Name = "Title"
+Title.BackgroundTransparency = 1
+Title.Position = UDim2.new(0, -160, 0, 1)
+Title.Size = UDim2.new(1, 0, 0, 25)
+Title.Font = Enum.Font.GothamBold
+Title.Text = "By : Kyoukara"
+Title.TextColor3 = Color3.fromRGB(204, 0, 0)
+Title.TextSize = 10
+Title.TextStrokeTransparency = 0.7
+
+-- Judul GUI
+local TitleWarung = Instance.new("TextLabel", MainFrame)
+TitleWarung.Name = "TitleWarung"
+TitleWarung.BackgroundTransparency = 1
+TitleWarung.Position = UDim2.new(0, 160, 0, 1)
+TitleWarung.Size = UDim2.new(0, 100, 0, 25)
+TitleWarung.Font = Enum.Font.GothamBold
+TitleWarung.Text = "WARUNG INDO"
+TitleWarung.TextColor3 = Color3.fromRGB(255, 0, 0)
+TitleWarung.TextSize = 18
+TitleWarung.TextStrokeTransparency = 0.7
+
+-- RGB
+task.spawn(function()
+	while true do
+		local t = tick()
+		local r = math.floor(math.sin(t) * 127 + 128)
+		local g = math.floor(math.sin(t + 2) * 127 + 128)
+		local b = math.floor(math.sin(t + 4) * 127 + 128)
+		TitleWarung.TextColor3 = Color3.fromRGB(r, g, b)
+		RunService.RenderStepped:Wait()
+	end
+end)
+
+--==[ Tombol Close ]==--
+local CloseButton = Instance.new("TextButton", MainFrame)
+CloseButton.Name = "CloseButton"
+CloseButton.Size = UDim2.new(0, 22, 0, 22)
+CloseButton.Position = UDim2.new(1, -25, 0, 3)
+CloseButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+CloseButton.BackgroundTransparency = 0.6
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Color3.new(1, 1, 1)
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.TextSize = 14
+CloseButton.ZIndex = 3
+
+Instance.new("UICorner", CloseButton).CornerRadius = UDim.new(0, 4)
+
+CloseButton.MouseButton1Click:Connect(function()
+	ScreenGui:Destroy()
+end)
+
+--==[ Garis Dekorasi ]==--
+local BlueLine = Instance.new("Frame", MainFrame)
+BlueLine.Name = "BlueLine"
+BlueLine.BackgroundColor3 = Color3.fromRGB(0, 145, 255)
+BlueLine.BorderSizePixel = 0
+BlueLine.Position = UDim2.new(0, 0, 0, 28)
+BlueLine.Size = UDim2.new(1, 0, 0, 5)
+
+local VerticalLine = Instance.new("Frame", MainFrame)
+VerticalLine.Name = "VerticalLine"
+VerticalLine.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+VerticalLine.BackgroundTransparency = 0.8
+VerticalLine.BorderSizePixel = 0
+VerticalLine.Position = UDim2.new(0, 80, 0, 33)
+VerticalLine.Size = UDim2.new(0, 2, 1, -33)
+
+--==[ Tab System ]==--
+local tabs = {}
+local currentTab = nil
+
+local function createTabContent(name)
+	local frame = Instance.new("Frame")
+	frame.Name = name
+	frame.Size = UDim2.new(1, 0, 1, 0)
+	frame.BackgroundTransparency = 1
+	frame.Visible = false
+	frame.Parent = contentPanel
+	tabs[name] = frame
+	return frame
+end
+
+local function switchTab(name)
+	for tabName, frame in pairs(tabs) do
+		frame.Visible = (tabName == name)
+	end
+	currentTab = name
+end
+
+local function moveIndicatorTo(button)
+	local targetY = button.Position.Y.Offset + ((button.Size.Y.Offset - TabIndicator.Size.Y.Offset) / 2)
+	TabIndicator:TweenPosition(
+		UDim2.new(0, 2, 0, targetY),
+		Enum.EasingDirection.Out,
+		Enum.EasingStyle.Quad,
+		0.2,
+		true
+	)
+end
+
+local function createTabButton(name, order)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0, 70, 0, 20)
+	btn.Position = UDim2.new(0, 5, 0, 38 + ((order - 1) * 25))
+	btn.Text = name
+	btn.Font = Enum.Font.SourceSansSemibold
+	btn.TextSize = 16
+	btn.BackgroundColor3 = Color3.fromRGB(0, 145, 255)
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.Parent = tabList
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 4)
+	corner.Parent = btn
+
+	btn.MouseButton1Click:Connect(function()
+		switchTab(name)
+		moveIndicatorTo(btn)
+	end)
+
+	return btn
+end
+
+-- Inisialisasi Tab dan Konten
+createTabContent("Main")
+createTabContent("Money")
+createTabButton("Main", 1)
+createTabButton("Money", 2)
+
+RunService.RenderStepped:Wait()
+switchTab("Main")
